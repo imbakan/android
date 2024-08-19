@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="@string/menu_name_10">
+        <menu>
+            <item
+                android:id="@+id/mnuConnect"
+                android:title="@string/menu_name_11" />
+            <item
+                android:id="@+id/mnuDisconnect"
+                android:title="@string/menu_name_12" />
+        </menu>
+    </item>
+    <item android:title="@string/menu_name_20">
+        <menu>
+            <item
+                android:id="@+id/mnuDownload"
+                android:title="@string/menu_name_21" />
+        </menu>
+    </item>
+
+</menu>
