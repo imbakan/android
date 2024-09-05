@@ -86,6 +86,9 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
         };
 
         server = new Server(handler, port);
+        
+        String ip = getIPAddress();
+        sendMessage(Server.LOG_MESSAGE, String.format("Ang IP Address ng server ay %s", ip));
     }
 
     @Override
@@ -144,6 +147,44 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
 
         msg = handler.obtainMessage(what, obj);
         msg.sendToTarget();
+    }
+
+    private String getIPAddress() {
+        List<NetworkInterface> interfaces;
+        List<InetAddress> addresses;
+        String str, ip;
+        boolean eureka;
+
+        ip = "DI MAKUHA IP ADDRESS";
+        eureka = false;
+
+        try {
+            interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+
+            for (NetworkInterface ni : interfaces) {
+
+                addresses = Collections.list(ni.getInetAddresses());
+
+                for (InetAddress ia : addresses) {
+
+                    str = ia.getHostAddress();
+
+                    if (!ia.isLoopbackAddress())
+                        if (str.indexOf(':') < 0) {
+                            eureka = true;
+                            ip = str;
+                        }
+
+                    if (eureka) break;
+                }
+
+                if (eureka) break;
+            }
+
+        } catch (SocketException ignore) {
+        }
+
+        return ip;
     }
 
     // logging activity ng server
