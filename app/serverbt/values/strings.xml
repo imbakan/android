@@ -1,1 +1,9 @@
 
+<resources>
+    <string name="app_name">Server BT</string>
+    <string name="menu_name_10">Server</string>
+    <string name="menu_name_11">Run</string>
+    <string name="menu_name_12">Shutdown</string>
+    <string name="menu_name_20">Client</string>
+    <string name="menu_name_21">Close</string>
+</resources>
