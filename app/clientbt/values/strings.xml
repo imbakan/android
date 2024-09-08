@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Client BT</string>
+    <string name="menu_name_10">Client</string>
+    <string name="menu_name_11">Connect</string>
+    <string name="menu_name_12">Disconnect</string>
+    <string name="menu_name_20">Tools</string>
+    <string name="menu_name_21">Download</string>
+</resources>
