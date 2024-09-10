@@ -24,12 +24,13 @@ public class Client implements Runnable {
 
     private final int BUFFER_SIZE = 32768;
 
-    private final int NEED_DATA      = 3101;
-    private final int SET_ORDER      = 3102;
-    private final int GET_INTEGER    = 3103;
-    private final int GET_LONG       = 3104;
-    private final int GET_STRING     = 3105;
-    private final int GET_CLIENT     = 3106;
+    private final int NEED_DATA     = 3101;
+    private final int SET_ORDER     = 3102;
+    private final int GET_INTEGER   = 3103;
+    private final int GET_LONG_1    = 3104;
+    private final int GET_LONG_2    = 3105;
+    private final int GET_STRING    = 3106;
+    private final int GET_CLIENT    = 3107;
 
     public static final int ATTRIBUTES  = 3201;
     private final int STRINGS           = 3202;
@@ -57,16 +58,20 @@ public class Client implements Runnable {
         this.adapter = adapter;
     }
 
-    private void outputBuffer(byte[] b, int k, int n) {
-        int i;
+    private String getBuffer(String msg, byte[] b, int index, int count) {
+        int i, k;
         StringBuilder str;
 
         str = new StringBuilder();
 
-        for (i=k; i<n; i++)
-            str.append(String.format("%02x", b[i]));
+        str.append(msg);
 
-        Log.d("KLGYN", str.toString());
+        k = index;
+
+        for (i=0; i<count; i++)
+            str.append(String.format(" %02x", b[k++]));
+
+        return str.toString();
     }
 
     public long getId() {
@@ -134,8 +139,6 @@ public class Client implements Runnable {
 
     public void send(byte[] buffer, int offset, int size) {
 
-        send(size);
-
         try {
             outputstream.write(buffer, offset, size);
         } catch (IOException e){
@@ -181,8 +184,8 @@ public class Client implements Runnable {
                 order.add(SET_ORDER);
                 break;
             case FORWARD:
-                order.add(GET_LONG);
-                order.add(GET_LONG);
+                order.add(GET_LONG_1);
+                order.add(GET_LONG_2);
                 order.add(GET_CLIENT);
                 order.add(RESEND);
                 order.add(GET_INTEGER);
@@ -217,7 +220,7 @@ public class Client implements Runnable {
         next[0] = order.remove(0);
     }
 
-    private void onGetLong(byte[] buffer, int[] index, ArrayList<Integer> order, int[] next, long[] value, int[] i) {
+    private void onGetLong(byte[] buffer, int[] index, ArrayList<Integer> order, int[] next, long[] value, int element) {
         ByteBuffer bb;
         int avail_size, req_size;
 
@@ -225,17 +228,14 @@ public class Client implements Runnable {
         req_size = Long.SIZE / 8;
 
         if (avail_size < req_size) {
-            order.add(0, GET_LONG);
+            order.add(0, element);
             next[0] = NEED_DATA;
             return;
         }
 
         bb = ByteBuffer.wrap(buffer, index[0], req_size);
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        value[i[0]] = bb.getLong();
-
-        ++i[0];
-        if (i[0] == 2) i[0] = 0;
+        value[0] = bb.getLong();
 
         index[0] += req_size;
         next[0] = order.remove(0);
@@ -308,20 +308,27 @@ public class Client implements Runnable {
         next[0] = order.remove(0);
     }
 
-    private void onResend(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next, Client[] client, long[] value) {
+    private void onResend(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next, Client[] client, long[] data_size) {
 
         long avail_size, req_size;
+        String str;
 
         avail_size = index[1] - index[0];
-        req_size = avail_size > value[1] ? value[1] : avail_size;
+        req_size = avail_size > data_size[0] ? data_size[0] : avail_size;
 
-        if (req_size > 0)
-            client[0].send(buffer, index[0], (int)req_size);
+        if (req_size > 0L) {
 
-        value[1] -= req_size;
+            str = getBuffer("send", buffer, index[0], (int) req_size);
+            Log.d("KLGYN", str);
+            sendMessage(LOG_MESSAGE, str);
+
+            client[0].send(buffer, index[0], (int) req_size);
+        }
+
+        data_size[0] -= req_size;
         index[0] += (int)req_size;
 
-        if (value[1] > 0L) {
+        if (data_size[0] > 0L) {
             order.add(0, RESEND);
             next[0] = NEED_DATA;
             return;
@@ -343,11 +350,12 @@ public class Client implements Runnable {
         boolean[] need_data = new boolean[1];
         int count;
 
-        int[] i = new int[1];
         int[] ivalue = new int[1];
-        long[] lvalue = new long[2];
+        long[] lvalue1 = new long[1];
+        long[] lvalue2 = new long[1];
         String[] str = new String[1];
         Client[] client = new Client[1];
+        String output;
 
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
@@ -360,7 +368,7 @@ public class Client implements Runnable {
 
             buffer_size[0] = BUFFER_SIZE;
             count = 0;
-            index[0] = index[1] = i[0] = 0;
+            index[0] = index[1] = 0;
             need_data[0] = true;
             next[0] = GET_INTEGER;
             order.add(SET_ORDER);
@@ -382,9 +390,11 @@ public class Client implements Runnable {
 
                     count = inputstream.read(buffer, index[1], buffer_size[0]);
 
-                    if (count <= 0) break;
+                    output = getBuffer("recv", buffer, index[1], count);
+                    Log.d("KLGYN", output);
+                    sendMessage(LOG_MESSAGE, output);
 
-                    //outputBuffer(buffer, index[1], count);
+                    if (count <= 0) break;
 
                     index[1] += count;
                     need_data[0] = false;
@@ -394,11 +404,12 @@ public class Client implements Runnable {
                     case SET_ORDER:		onSetOrder(need_data, order, next, ivalue[0]);									break;
                     case NEED_DATA:		onNeedData(buffer, index, buffer_size, need_data, order, next);					break;
                     case GET_INTEGER:	onGetInteger(buffer, index, order, next, ivalue);								break;
-                    case GET_LONG:		onGetLong(buffer, index, order, next, lvalue, i);								break;
+                    case GET_LONG_1:	onGetLong(buffer, index, order, next, lvalue1, next[0]);						break;
+                    case GET_LONG_2:	onGetLong(buffer, index, order, next, lvalue2, next[0]);						break;
                     case GET_STRING:	onGetString(buffer, index, order, next, ivalue[0], str);						break;
-                    case GET_CLIENT:	onGetClient(order, next, lvalue, client);										break;
+                    case GET_CLIENT:	onGetClient(order, next, lvalue1, client);										break;
                     case RUNNING:	    onRunning(order, next, str);													break;
-                    case RESEND:		onResend(buffer, index, buffer_size, need_data, order, next, client, lvalue);   break;
+                    case RESEND:		onResend(buffer, index, buffer_size, need_data, order, next, client, lvalue2);  break;
                 }
             }
 
