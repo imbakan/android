@@ -4,7 +4,7 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
-import android.util.Log;
+//import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -311,16 +311,15 @@ public class Client implements Runnable {
     private void onResend(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next, Client[] client, long[] data_size) {
 
         long avail_size, req_size;
-        String str;
+        //String str;
 
         avail_size = index[1] - index[0];
         req_size = avail_size > data_size[0] ? data_size[0] : avail_size;
 
         if (req_size > 0L) {
 
-            str = getBuffer("send", buffer, index[0], (int) req_size);
-            Log.d("KLGYN", str);
-            sendMessage(LOG_MESSAGE, str);
+            //str = getBuffer("send", buffer, index[0], (int) req_size);
+            //sendMessage(LOG_MESSAGE, str);
 
             client[0].send(buffer, index[0], (int) req_size);
         }
@@ -355,7 +354,7 @@ public class Client implements Runnable {
         long[] lvalue2 = new long[1];
         String[] str = new String[1];
         Client[] client = new Client[1];
-        String output;
+        //String output;
 
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
@@ -390,9 +389,8 @@ public class Client implements Runnable {
 
                     count = inputstream.read(buffer, index[1], buffer_size[0]);
 
-                    output = getBuffer("recv", buffer, index[1], count);
-                    Log.d("KLGYN", output);
-                    sendMessage(LOG_MESSAGE, output);
+                    //output = getBuffer("recv", buffer, index[1], count);
+                    //sendMessage(LOG_MESSAGE, output);
 
                     if (count <= 0) break;
 
