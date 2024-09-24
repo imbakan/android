@@ -4,7 +4,7 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
-//import android.util.Log;
+import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -153,8 +153,16 @@ public class Client implements Runnable {
         msg.sendToTarget();
     }
 
-    private void onNeedData(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next) {
+    //   |<--------------------------------- BUFFER_SIZE ------------------------------->|
+    //             |<------------ on hand ----------->|<---------- buffer size --------->|
+    //   +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+    //   |  0 |  1 |  2 |  3 |  4 |  5 |  6 |  7 |  8 |  9 | 10 | 11 | 12 | 13 | 14 | 15 |
+    //   +----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+----+
+    //                ^                                  ^
+    //                |                                  |
+    //             index[0]                           index[1]
 
+    private void onNeedData(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next) {
         int i, k, n;
 
         n = index[1] - index[0];
@@ -261,7 +269,6 @@ public class Client implements Runnable {
     }
 
     private void onGetClient(ArrayList<Integer> order, int[] next, long[] value, Client[] client) {
-
         Client item;
         int i, n;
 
@@ -309,31 +316,25 @@ public class Client implements Runnable {
     }
 
     private void onResend(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next, Client[] client, long[] data_size) {
-
-        long avail_size, req_size;
-        //String str;
+        long avail_size;
 
         avail_size = index[1] - index[0];
-        req_size = avail_size > data_size[0] ? data_size[0] : avail_size;
 
-        if (req_size > 0L) {
+        if (avail_size < data_size[0]) {
 
-            //str = getBuffer("send", buffer, index[0], (int) req_size);
-            //sendMessage(LOG_MESSAGE, str);
+            if (avail_size > 0)
+                client[0].send(buffer, index[0], (int) avail_size);
+            index[0] = index[1] = 0;
+            buffer_size[0] = BUFFER_SIZE;
+            data_size[0] -= avail_size;
+            need_data[0] = true;
 
-            client[0].send(buffer, index[0], (int) req_size);
+        } else {
+
+            client[0].send(buffer, index[0], (int) data_size[0]);
+            index[0] += (int) data_size[0];
+            next[0] = order.remove(0);
         }
-
-        data_size[0] -= req_size;
-        index[0] += (int)req_size;
-
-        if (data_size[0] > 0L) {
-            order.add(0, RESEND);
-            next[0] = NEED_DATA;
-            return;
-        }
-
-        next[0] = order.remove(0);
     }
 
     @Override
@@ -354,7 +355,6 @@ public class Client implements Runnable {
         long[] lvalue2 = new long[1];
         String[] str = new String[1];
         Client[] client = new Client[1];
-        //String output;
 
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
@@ -389,9 +389,6 @@ public class Client implements Runnable {
 
                     count = inputstream.read(buffer, index[1], buffer_size[0]);
 
-                    //output = getBuffer("recv", buffer, index[1], count);
-                    //sendMessage(LOG_MESSAGE, output);
-
                     if (count <= 0) break;
 
                     index[1] += count;
@@ -412,12 +409,12 @@ public class Client implements Runnable {
             }
 
         } catch (IOException | SecurityException e) {
+            //Log.d("KLGYN", e.toString());
             sendMessage(LOG_MESSAGE, e.toString());
         }
 
         shutdown();
 
         sendMessage(SHUTTING_DOWN, this);
-
     }
 }
