@@ -27,7 +27,7 @@ import java.util.UUID;
 
 public class Client implements Runnable {
 
-    private final UUID MY_UUID = UUID.fromString("b1899020-c25d-489b-a700-42304d6adbbc");
+    private final UUID MY_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
 
     public static final int LOG_MESSAGE     = 2001;
     public static final int CONNECTING      = 2002;
