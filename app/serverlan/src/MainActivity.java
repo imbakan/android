@@ -1,17 +1,6 @@
+package balikbayan.box.server_lan;
 
-// client-server model
-// server side
-// LAN
-// Android 6 Api 23
-
-package balikbayan.box.serverlan06;
-
-import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,48 +9,51 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
+import java.net.SocketException;
+import java.util.Collections;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements ListViewEventListener {
+public class MainActivity extends AppCompatActivity implements ListViewAdapter.OnEventListener {
 
-    private final int port = 27015;
+    private final int port = 54105;
 
     private RecyclerView recyclerView1;
     private EditText editText1;
 
+    private Toolbar toolbar;
     private Handler handler;
-    private boolean server_running, item_selected;
 
     private Server server;
-
-    OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(false) {
-        @Override
-        public void handleOnBackPressed() {
-            Toast.makeText(getApplicationContext(), "TUMATAKBO PA ANG SERVER O CLIENT", Toast.LENGTH_SHORT).show();
-        }
-    };
+    private boolean running, selected;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        String str = getResources().getString(R.string.app_name);
-        setTitle(str + " - offline");
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
 
-        item_selected = server_running = false;
+        toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle("OFFLINE");
+        setSupportActionBar(toolbar);
 
         editText1 = findViewById(R.id.editText1);
         editText1.setKeyListener(null);
 
+        ListViewAdapter adapter = new ListViewAdapter(this, this);
         recyclerView1 = findViewById(R.id.recyclerView1);
         recyclerView1.setLayoutManager(new LinearLayoutManager(this));
-        ListViewAdapter adapter = new ListViewAdapter(this, (ListViewEventListener) this);
         recyclerView1.setAdapter(adapter);
-
-        getOnBackPressedDispatcher().addCallback(this, onBackPressedCallback);
 
         //  +------------------------------------------------------------------------+
         //  |                          handler message                               |
@@ -85,8 +77,9 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
             }
         };
 
+        // ILAGAY ITO SA INITIALIZE
         server = new Server(handler, port);
-        
+
         String ip = getIPAddress();
         sendMessage(Server.LOG_MESSAGE, String.format("Ang IP Address ng server ay %s", ip));
     }
@@ -100,23 +93,22 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
-        menu.findItem(R.id.mnuRun).setEnabled(!server_running);
-        menu.findItem(R.id.mnuShutdown).setEnabled(server_running);
-        menu.findItem(R.id.mnuClose).setEnabled(item_selected);
+        menu.findItem(R.id.mnuRun).setEnabled(!running);
+        menu.findItem(R.id.mnuShutdown).setEnabled(running);
+        menu.findItem(R.id.mnuClose).setEnabled(selected);
 
         return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-
         int id = item.getItemId();
 
-        if (id == R.id.mnuRun)
+        if(id == R.id.mnuRun)
             onServerRun();
-        else if (id == R.id.mnuShutdown)
+        else if(id == R.id.mnuShutdown)
             onServerShutdown();
-        else if (id == R.id.mnuClose)
+        else if(id == R.id.mnuClose)
             onClientClose();
         else
             return super.onOptionsItemSelected(item);
@@ -124,29 +116,21 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
         return true;
     }
 
-    // irun ang server
     private void onServerRun() {
         new Thread(server).start();
     }
 
-    // ishutdown ang server
     private void onServerShutdown() {
         server.shutdown();
     }
 
-    // iclose ang selected client
     private void onClientClose() {
-        ListViewAdapter adapter =  (ListViewAdapter) recyclerView1.getAdapter();
-        Client client = adapter.getSelectedItem();
+        ListViewAdapter adapter;
+        Client client;
+
+        adapter = (ListViewAdapter) recyclerView1.getAdapter();
+        client = adapter.getItem();
         client.shutdown();
-    }
-
-    // isend sa log output
-    private void sendMessage(int what, Object obj) {
-        Message msg;
-
-        msg = handler.obtainMessage(what, obj);
-        msg.sendToTarget();
     }
 
     private String getIPAddress() {
@@ -187,7 +171,13 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
         return ip;
     }
 
-    // logging activity ng server
+    private void sendMessage(int what, Object obj) {
+        Message msg;
+
+        msg = handler.obtainMessage(what, obj);
+        msg.sendToTarget();
+    }
+
     private void onLogMessage(Message msg) {
         String str1, str2, str3;
 
@@ -197,118 +187,133 @@ public class MainActivity extends AppCompatActivity implements ListViewEventList
         editText1.setText(str3);
     }
 
-    // running na ang server at di pede backpressed
     private void onServerRunning(Message msg) {
-        server_running = true;
-        String str = getResources().getString(R.string.app_name);
-        setTitle(str + " - online");
-
-        onBackPressedCallback.setEnabled(server_running);
+        String str = (String) msg.obj;
+        sendMessage(Server.LOG_MESSAGE, str);
+        toolbar.setTitle("ONLINE");
+        running = true;
     }
 
-    // shutdown na ang server at pede backpressed
     private void onServerShuttingDown(Message msg) {
-        server_running = false;
-        String str = getResources().getString(R.string.app_name);
-        setTitle(str + " - offline");
-
-        ListViewAdapter adapter = (ListViewAdapter)recyclerView1.getAdapter();
-        onBackPressedCallback.setEnabled(adapter.getItemCount() > 0);
+        String str = (String) msg.obj;
+        sendMessage(Server.LOG_MESSAGE, str);
+        toolbar.setTitle("OFFLINE");
+        running = false;
     }
 
-    // gumawa ng thread para sa kumonektang client
     private void onCreateClient(Message msg) {
         Socket socket = (Socket) msg.obj;
-        ListViewAdapter adapter =  (ListViewAdapter) recyclerView1.getAdapter();
-        Client client = new Client(handler, socket, adapter);
+        Client client = new Client(handler, socket);
         new Thread(client).start();
     }
 
-    //
     private void onClientRunning(Message msg) {
-        Client client = (Client) msg.obj;
-        Client item;
+        Client client1 = (Client) msg.obj;
         ListViewAdapter adapter;
-        int i, n;
+        int k, n;
 
-        // isend ang id number sa kumonektang client
-        client.send(Client.CONFIRM);
-        client.send(client.getId());
+        // ang server ay nag-aasign ng id sa kumonektang client
+        // isend 'to sa client
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                client1.send(Client.CONNECTED);
+                client1.send(client1.getId());
+            }
+        }).start();
 
-        adapter =  (ListViewAdapter) recyclerView1.getAdapter();
+        adapter = (ListViewAdapter) recyclerView1.getAdapter();
+
+        // isend ang mga pangalan ng client na nasa list view sa kumonektang client
         n = adapter.getItemCount();
 
         if (n > 0) {
 
-            // isend ang mga pangalan ng client na nasa recycler view sa kumonektang client
-            for (i=0; i<n; i++) {
+            // isend ang mga pangalan ng client na nasa list view sa kumonektang client
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Client client2;
+                    int i;
 
-                item = adapter.getItem(i);
+                    for (i = 0; i < n; i++) {
 
-                client.send(Client.ATTRIBUTES);
-                client.send(item.getName());
-                client.send(item.getId());
-            }
+                        client2 = adapter.getItem(i);
 
-            client.send(Client.REPLY_DEVICES);
+                        client1.send(Client.ATTRIBUTES);
+                        client1.send(client2.getName());
+                        client1.send(client2.getId());
+                    }
 
-            // isend ang pangalan ng kumonektang client sa mga client na nasa recycler view
-            for (i=0; i<n; i++) {
+                    client1.send(Client.REPLY_DEVICE);
+                }
+            }).start();
 
-                item = adapter.getItem(i);
+            // isend ang pangalan ng kumonektang client sa mga client na nasa list view
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Client client2;
+                    int i;
 
-                item.send(Client.REPLY_DEVICE);
-                item.send(client.getName());
-                item.send(client.getId());
-            }
+                    for (i = 0; i < n; i++) {
+
+                        client2 = adapter.getItem(i);
+
+                        client2.send(Client.ATTRIBUTES);
+                        client2.send(client1.getName());
+                        client2.send(client1.getId());
+                        client2.send(Client.REPLY_DEVICE);
+                    }
+                }
+            }).start();
         }
 
-        // iadd ang kumonektang client sa recycler view
-        adapter.add(client);
-        adapter.notifyItemInserted(n);
-
-        sendMessage(Client.LOG_MESSAGE, String.format("The client thread 0x%x has started.", client.getId()));
+        // iadd ang kumonektang client sa list view
+        adapter.add(client1);
+        k = adapter.getItemCount() - 1;
+        adapter.notifyItemInserted(k);
     }
 
-    //
     private void onClientShuttingDown(Message msg) {
-        Client client = (Client)msg.obj;
+        Client client1 = (Client) msg.obj;
         ListViewAdapter adapter;
-        Client item;
-        int i, n;
+        int k;
 
-        // iremove ang client na 'to sa recycler view
-        adapter =  (ListViewAdapter) recyclerView1.getAdapter();
-        i = adapter.remove(client);
-        adapter.notifyItemRemoved(i);
+        // iremove ang client na 'to sa list view
+        adapter = (ListViewAdapter) recyclerView1.getAdapter();
+        k = adapter.getPosition(client1);
+        adapter.remove(k);
+        adapter.notifyItemRemoved(k);
 
-        sendMessage(Client.LOG_MESSAGE, String.format("The client thread 0x%x has exited.", client.getId()));
+        // ipaalam sa mga client na nasa list view na wala na ang client na 'to
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
 
-        // ipaalam sa mga client na nasa recycler view na wala na ang client na 'to
-        n = adapter.getItemCount();
+                Client client2;
+                int i, n;
 
-        for (i=0; i<n; i++) {
+                n = adapter.getItemCount();
 
-            item = adapter.getItem(i);
+                for (i = 0; i < n; i++) {
 
-            item.send(Client.LEAVE);
-            item.send(client.getId());
-        }
+                    client2 = adapter.getItem(i);
 
-        item_selected = false;
-
-        n = adapter.getItemCount();
-        onBackPressedCallback.setEnabled(server_running || n > 0);
-
+                    client2.send(Client.LEAVE);
+                    client2.send(client1.getId());
+                }
+            }
+    }).start();
     }
 
     @Override
     public void onItemSelected() {
-        item_selected = true;
+        selected = true;
     }
 
     @Override
     public void onItemUnselected() {
-        item_selected = false;
+        selected = false;
     }
 }
