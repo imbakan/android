@@ -1,4 +1,4 @@
-package balikbayan.box.serverlan06;
+package balikbayan.box.server_lan;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -16,41 +16,57 @@ import java.util.ArrayList;
 public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
 
     private Context context;
+    private OnEventListener listener;
     private ArrayList<Client> array;
-    private ListViewEventListener listener;
     private View view1;
     private int index;
+    boolean ounce1, ounce2;
 
-    public ListViewAdapter(Context context, ListViewEventListener listener) {
+    public ListViewAdapter(Context context, OnEventListener listener) {
         this.context = context;
         this.listener = listener;
         array = new ArrayList<>();
         view1 = null;
-        index = 0;
+        index = -1;
+        ounce1 = ounce2 = false;
     }
 
     public void add(Client client) {
         array.add(client);
     }
 
-    public int remove(Client client) {
-        int i = array.indexOf(client);
+    public void remove(Client client) {
         array.remove(client);
-        return i;
     }
 
-    public Client getItem(int position) {
-        return array.get(position);
+    public void remove(int i) {
+        array.remove(i);
     }
 
-    public Client getSelectedItem() {
+    public void clear() {
+        array.clear();
+    }
+
+    public Client getItem(int i) {
+        return array.get(i);
+    }
+
+    public Client getItem() {
         return array.get(index);
+    }
+
+    public int getPosition(Client client) {
+        return array.indexOf(client);
+    }
+
+    public int getPosition() {
+        return index;
     }
 
     @NonNull
     @Override
     public ListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.list_layout, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.list_layout_1, parent, false);
         return new ListViewHolder(view);
     }
 
@@ -65,44 +81,43 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
         layout = holder.getLayout();
 
         str1 = array.get(position).getName();
-        str2 = array.get(position).getLogOnTime();
+        str2 = array.get(position).getDate();
 
         textView1.setText(str1);
         textView2.setText(str2);
 
-        // ang click ay para ideselect ang item
         layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                // alisin ang pagiging highlight ng dating item
-                if(view1 != null)
+                if (view1 != null) {
                     view1.setBackgroundColor(Color.TRANSPARENT);
 
-                listener.onItemUnselected();
+                    index = -1;
+                    view1 = null;
+                }
 
+                listener.onItemUnselected();
             }
         });
 
-        // ang long click ay para iselect ang item
         layout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
 
-                // alisin ang pagiging highlight ng dating item
-                if(view1 != null)
+                if (view1 != null)
                     view1.setBackgroundColor(Color.TRANSPARENT);
 
-                // ihighlight ang item
                 view.setBackgroundColor(Color.LTGRAY);
 
-                // isave ang mga ito
                 index = holder.getAdapterPosition();
                 view1 = view;
 
+                ounce1 = false;
+                ounce2 = true;
+
                 listener.onItemSelected();
 
-                // wag na isend sa ibang event listener
                 return true;
             }
         });
@@ -111,5 +126,22 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
     @Override
     public int getItemCount() {
         return array.size();
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+            }
+        });
+    }
+
+    public interface OnEventListener {
+        void onItemSelected();
+        void onItemUnselected();
     }
 }
