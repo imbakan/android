@@ -1,4 +1,4 @@
-package balikbayan.box.serverlan06;
+package balikbayan.box.server_lan;
 
 import android.view.View;
 import android.widget.TextView;
@@ -11,6 +11,7 @@ public class ListViewHolder extends RecyclerView.ViewHolder {
 
     private TextView textView1, textView2;
     private ConstraintLayout layout1;
+
 
     public ListViewHolder(@NonNull View itemView) {
         super(itemView);
