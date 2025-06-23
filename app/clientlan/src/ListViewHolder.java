@@ -1,4 +1,4 @@
-package balikbayan.box.clientlan;
+package balikbayan.box.client_lan;
 
 import android.view.View;
 import android.widget.ImageView;
@@ -8,18 +8,18 @@ import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class TreeViewHolder extends RecyclerView.ViewHolder {
+public class ListViewHolder1 extends RecyclerView.ViewHolder {
 
     private ImageView imageView;
     private TextView textView;
     private ConstraintLayout layout;
 
-    public TreeViewHolder(@NonNull View view) {
-        super(view);
+    public ListViewHolder1(@NonNull View itemView) {
+        super(itemView);
 
-        textView = view.findViewById(R.id.textView2);
-        imageView = view.findViewById(R.id.imageView1);
-        layout = view.findViewById(R.id.layout1);
+        textView = itemView.findViewById(R.id.textView11);
+        imageView = itemView.findViewById(R.id.imageView11);
+        layout = itemView.findViewById(R.id.layout1);
     }
 
     public ImageView getImageView() {
