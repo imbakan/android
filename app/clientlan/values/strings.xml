@@ -1,8 +1,12 @@
 <resources>
-    <string name="app_name">Client LAN</string>
+    <string name="app_name">client_lan</string>
     <string name="menu_name_10">Client</string>
     <string name="menu_name_11">Connect</string>
     <string name="menu_name_12">Disconnect</string>
-    <string name="menu_name_20">Tools</string>
+    <string name="menu_name_20">File</string>
     <string name="menu_name_21">Download</string>
+    <string name="menu_name_30">Tools</string>
+    <string name="menu_name_31">Debug 1</string>
+    <string name="menu_name_32">Debug 2</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
