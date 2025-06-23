@@ -1,16 +1,13 @@
-package balikbayan.box.clientlan;
+package balikbayan.box.client_lan;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
-import android.util.Log;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
@@ -19,14 +16,12 @@ import androidx.fragment.app.DialogFragment;
 
 public class ConnectDialog extends DialogFragment {
 
-    public static final int CONNECT = 9301;
-
-    private Handler handler;
     private String ip;
+    OnClickListener listener;
 
-    public ConnectDialog(Handler handler, String ip) {
-        this.handler = handler;
+    public ConnectDialog(String ip, OnClickListener listener) {
         this.ip = ip;
+        this.listener = listener;
     }
 
     @NonNull
@@ -44,12 +39,8 @@ public class ConnectDialog extends DialogFragment {
         builder.setPositiveButton("connect", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                Message msg;
-                String str;
-
-                str = editText.getText().toString();
-                msg = handler.obtainMessage(CONNECT, str);
-                msg.sendToTarget();
+                String str = editText.getText().toString();
+                listener.onClick(str);
             }
         });
 
@@ -82,4 +73,9 @@ public class ConnectDialog extends DialogFragment {
 
         return dialog;
     }
+
+    public interface OnClickListener {
+        void onClick(String str);
+    }
+
 }
