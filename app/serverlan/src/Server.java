@@ -1,8 +1,7 @@
-package balikbayan.box.serverlan06;
+package balikbayan.box.server_lan;
 
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -39,6 +38,7 @@ public class Server implements Runnable {
         msg.sendToTarget();
     }
 
+
     @Override
     public void run() {
 
@@ -46,8 +46,8 @@ public class Server implements Runnable {
 
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
-        sendMessage(LOG_MESSAGE, "Server thread has started.");
-        sendMessage(RUNNING, null);
+        //sendMessage(LOG_MESSAGE, "Server thread has started.");
+        sendMessage(RUNNING, "Server thread has started.");
 
         try {
 
@@ -67,7 +67,7 @@ public class Server implements Runnable {
 
         shutdown();
 
-        sendMessage(LOG_MESSAGE, "Server thread has exited.");
-        sendMessage(SHUTTING_DOWN, null);
+        //sendMessage(LOG_MESSAGE, "Server thread has exited.");
+        sendMessage(SHUTTING_DOWN, "Server thread has exited.");
     }
 }
