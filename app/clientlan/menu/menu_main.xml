@@ -18,5 +18,14 @@
                 android:title="@string/menu_name_21" />
         </menu>
     </item>
-
+    <item android:title="@string/menu_name_30">
+        <menu>
+            <item
+                android:id="@+id/mnuDebug1"
+                android:title="@string/menu_name_31" />
+            <item
+                android:id="@+id/mnuDebug2"
+                android:title="@string/menu_name_32" />
+        </menu>
+    </item>
 </menu>
