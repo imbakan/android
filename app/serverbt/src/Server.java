@@ -1,4 +1,4 @@
-package balikbayan.box.serverbt06;
+package balikbayan.box.server_bt;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -53,8 +53,8 @@ public class Server implements Runnable {
 
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
-        sendMessage(LOG_MESSAGE, "Server thread has started.");
-        sendMessage(RUNNING, null);
+        //sendMessage(LOG_MESSAGE, "Server thread has started.");
+        sendMessage(RUNNING, "Server thread has started.");
 
         try {
 
@@ -76,7 +76,7 @@ public class Server implements Runnable {
 
         shutdown();
 
-        sendMessage(LOG_MESSAGE, "Server thread has exited.");
-        sendMessage(SHUTTING_DOWN, null);
+        //sendMessage(LOG_MESSAGE, "Server thread has exited.");
+        sendMessage(SHUTTING_DOWN, "Server thread has exited.");
     }
 }
