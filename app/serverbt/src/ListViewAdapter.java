@@ -1,4 +1,4 @@
-package balikbayan.box.serverbt06;
+package balikbayan.box.server_bt;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -16,41 +16,59 @@ import java.util.ArrayList;
 public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
 
     private Context context;
+    private OnEventListener listener;
     private ArrayList<Client> array;
-    private ListViewEventListener listener;
     private View view1;
-    private int index;
+    private int index, color;
 
-    public ListViewAdapter(Context context, ListViewEventListener listener) {
+    public ListViewAdapter(Context context, OnEventListener listener) {
         this.context = context;
         this.listener = listener;
         array = new ArrayList<>();
         view1 = null;
-        index = 0;
+        index = -1;
     }
 
     public void add(Client client) {
         array.add(client);
     }
 
-    public int remove(Client client) {
-        int i = array.indexOf(client);
+    public void remove(Client client) {
         array.remove(client);
-        return i;
     }
 
-    public Client getItem(int position) {
-        return array.get(position);
+    public void remove(int i) {
+        array.remove(i);
     }
 
-    public Client getSelectedItem() {
+    public void clear() {
+        array.clear();
+    }
+
+    public Client getItem(int i) {
+        return array.get(i);
+    }
+
+    public Client getItem() {
         return array.get(index);
+    }
+
+    public int getPosition(Client client) {
+        return array.indexOf(client);
+    }
+
+    public int getPosition() {
+        return index;
     }
 
     @NonNull
     @Override
     public ListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.list_layout, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.list_item_1, parent, false);
+
+        TextView textView = view.findViewById(R.id.textView1);
+        color = textView.getCurrentTextColor();
+
         return new ListViewHolder(view);
     }
 
@@ -65,44 +83,63 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
         layout = holder.getLayout();
 
         str1 = array.get(position).getName();
-        str2 = array.get(position).getLogOnTime();
+        str2 = array.get(position).getDate();
 
         textView1.setText(str1);
         textView2.setText(str2);
 
-        // ang click ay para ideselect ang item
         layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                TextView textView1, textView2;
 
-                // alisin ang pagiging highlight ng dating item
-                if(view1 != null)
+                if(view1 != null) {
+
                     view1.setBackgroundColor(Color.TRANSPARENT);
 
-                listener.onItemUnselected();
+                    textView1 = view1.findViewById(R.id.textView1);
+                    textView2 = view1.findViewById(R.id.textView2);
 
+                    textView1.setTextColor(color);
+                    textView2.setTextColor(color);
+                }
+
+                view1 = null;
+                index = -1;
+
+                listener.onItemUnselected();
             }
         });
 
-        // ang long click ay para iselect ang item
         layout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
+                TextView textView1, textView2;
 
-                // alisin ang pagiging highlight ng dating item
-                if(view1 != null)
+                if(view1 != null) {
+
                     view1.setBackgroundColor(Color.TRANSPARENT);
 
-                // ihighlight ang item
+                    textView1 = view1.findViewById(R.id.textView1);
+                    textView2 = view1.findViewById(R.id.textView2);
+
+                    textView1.setTextColor(color);
+                    textView2.setTextColor(color);
+                }
+
                 view.setBackgroundColor(Color.LTGRAY);
 
-                // isave ang mga ito
-                index = holder.getAdapterPosition();
+                textView1 = view.findViewById(R.id.textView1);
+                textView2 = view.findViewById(R.id.textView2);
+
+                textView1.setTextColor(Color.DKGRAY);
+                textView2.setTextColor(Color.DKGRAY);
+
                 view1 = view;
+                index = holder.getAdapterPosition();
 
                 listener.onItemSelected();
 
-                // wag na isend sa ibang event listener
                 return true;
             }
         });
@@ -111,5 +148,10 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
     @Override
     public int getItemCount() {
         return array.size();
+    }
+
+    public interface OnEventListener {
+        void onItemSelected();
+        void onItemUnselected();
     }
 }
