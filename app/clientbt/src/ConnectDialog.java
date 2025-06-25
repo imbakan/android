@@ -1,5 +1,4 @@
-
-package balikbayan.box.clientbt;
+package balikbayan.box.client_bt;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -8,8 +7,8 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,24 +18,35 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.Set;
 
-public class ConnectDialog extends DialogFragment implements DeviceEventListener{
-
-    public static final int CONNECT = 9301;
+public class ConnectDialog extends DialogFragment {
 
     private AlertDialog dialog;
     private Context context;
-    private Handler handler;
+    private BluetoothDevice bluetooth_device;
+    private OnClickListener listener;
 
-    public ConnectDialog(Handler handler, Context context) {
-        this.handler = handler;
+    public ConnectDialog(Context context, OnClickListener listener) {
         this.context = context;
+        this.listener = listener;
     }
 
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
 
-        DeviceAdapter adapter = new DeviceAdapter(context, (DeviceEventListener) this);
+       ListViewAdapter3 adapter = new ListViewAdapter3(context, new ListViewAdapter3.OnEventListener() {
+
+           @Override
+           public void onItemSelected(BluetoothDevice device) {
+               bluetooth_device = device;
+               dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+           }
+
+           @Override
+           public void onItemUnselected() {
+               dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+           }
+       });
 
         BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         Set<BluetoothDevice> devices = manager.getAdapter().getBondedDevices();
@@ -50,32 +60,30 @@ public class ConnectDialog extends DialogFragment implements DeviceEventListener
         recyclerView.setAdapter(adapter);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+
+        TextView textView = new TextView(context);
+        textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textView.setHeight(128);
+        textView.setPadding(32, 32, 32, 32);
+        textView.setText(R.string.text_name_1);
+
+        builder.setCustomTitle(textView);
         builder.setView(recyclerView);
 
-        // positive
         builder.setPositiveButton("connect", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                Message msg;
-                DeviceAdapter adapter;
-                BluetoothDevice device;
-
-                adapter = (DeviceAdapter) recyclerView.getAdapter();
-                device = adapter.getSelectedItem();
-
-                msg = handler.obtainMessage(CONNECT, device);
-                msg.sendToTarget();
+                listener.onClick(bluetooth_device);
             }
         });
 
-        // negative
         builder.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
+
             }
         });
 
-        // ilagay ito pagkatapos ng builder set positive/negative button
         dialog = builder.create();
         dialog.setCanceledOnTouchOutside(false);
 
@@ -88,13 +96,7 @@ public class ConnectDialog extends DialogFragment implements DeviceEventListener
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
     }
 
-    @Override
-    public void onItemSelected(int position) {
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-    }
-
-    @Override
-    public void onItemUnselected() {
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+    public interface OnClickListener {
+        void onClick(BluetoothDevice device);
     }
 }
