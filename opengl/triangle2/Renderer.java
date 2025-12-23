@@ -61,6 +61,11 @@ public class Renderer  implements GLSurfaceView.Renderer {
 
         model.create(shader.getHandle());
 
+        Log.d("KLGYN", String.format("OpenGL Version :%s", GLES32.glGetString(GLES32.GL_VERSION)));
+        Log.d("KLGYN", String.format("GLES Version   :%s", GLES32.glGetString(GLES32.GL_SHADING_LANGUAGE_VERSION)));
+        Log.d("KLGYN", String.format("Vendor         :%s", GLES32.glGetString(GLES32.GL_VENDOR)));
+        Log.d("KLGYN", String.format("Renderer       :%s", GLES32.glGetString(GLES32.GL_RENDERER)));
+
         GLES32.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     }
 
