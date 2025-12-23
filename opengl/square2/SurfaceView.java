@@ -5,14 +5,14 @@ import android.opengl.GLSurfaceView;
 
 public class SurfaceView extends GLSurfaceView {
 
-    private balikbayan.box.square1.Renderer renderer;
+    private balikbayan.box.square2.Renderer renderer;
 
     public SurfaceView(Context context) {
         super(context);
 
         setEGLContextClientVersion(3);
 
-        renderer = new balikbayan.box.square1.Renderer(context);
+        renderer = new balikbayan.box.square2.Renderer(context);
         setRenderer(renderer);
     }
 }
