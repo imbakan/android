@@ -1,4 +1,4 @@
-package balikbayan.box.square1;
+package balikbayan.box.square2;
 
 import android.os.Bundle;
 
