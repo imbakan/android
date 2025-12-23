@@ -1,4 +1,4 @@
-package balikbayan.box.square1;
+package balikbayan.box.square2;
 
 import android.content.Context;
 import android.opengl.GLES32;
