@@ -27,27 +27,27 @@ public class Renderer  implements GLSurfaceView.Renderer {
         String source1, source2;
 
         source1 = "#version 320 es\n" +
-                "\n" +
-                "precision mediump float;\n" +
-                "\n" +
-                "in vec2 v_vertex;\n" +
-                "\n" +
-                "uniform mat4 m_matrix;\n" +
-                "\n" +
-                "void main()\n" +
-                "{\n" +
-                "\tgl_Position =  m_matrix * vec4(vec3(v_vertex, 0.0), 1.0);\n" +
+                
+                "precision mediump float;" +
+                
+                "in vec2 v_vertex;" +
+                
+                "uniform mat4 m_matrix;" +
+                
+                "void main()" +
+                "{" +
+                "gl_Position =  m_matrix * vec4(vec3(v_vertex, 0.0), 1.0);" +
                 "}";
 
         source2 = "#version 320 es\n" +
-                "\n" +
-                "precision mediump float;\n" +
-                "\n" +
-                "out vec4 FragColor;\n" +
-                "\n" +
-                "void main()\n" +
-                "{\n" +
-                "\tFragColor = vec4(0.5, 0.5, 0.5, 1.0);\n" +
+                
+                "precision mediump float;" +
+                
+                "out vec4 FragColor;" +
+                
+                "void main()" +
+                "{" +
+                "FragColor = vec4(0.5, 0.5, 0.5, 1.0);" +
                 "}";
 
         shader.create(source1, source2);
