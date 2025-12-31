@@ -369,7 +369,7 @@ public class FragmentTV extends Fragment implements TreeViewAdapter.OnEventListe
         }
 
         holder = (TreeViewHolder) recyclerView.findViewHolderForAdapterPosition(position);
-        layout = holder.getLayout();  // DEBUG : NULL OBJECT REFRERENCE
+        layout = holder.getLayout();
         layout.performClick();
     }
 
