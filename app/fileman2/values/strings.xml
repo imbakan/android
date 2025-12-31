@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">File Manager</string>
+    <string name="menu_name_01">Move …</string>
+    <string name="menu_name_02">Rename …</string>
+    <string name="menu_name_10">Directory</string>
+    <string name="menu_name_11">Create …</string>
+    <string name="menu_name_12">Remove</string>
+    <string name="menu_name_20">File</string>
+    <string name="menu_name_21">Delete</string>
+    <string name="menu_name_22">Copy …</string>
+    <string name="text_name_1">Create Directory</string>
+    <string name="text_name_2">Rename Directory</string>
+    <string name="text_name_3">Remove Directory</string>
+    <string name="text_name_4">Move Directory</string>
+    <string name="text_name_5">Rename File</string>
+    <string name="text_name_6">Delete File</string>
+    <string name="text_name_7">Move File</string>
+    <string name="text_name_8">Copy File</string>
+</resources>
