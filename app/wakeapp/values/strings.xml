@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Wake App</string>
+    <string name="menu_name_10">Tools</string>
+    <string name="menu_name_11">Test</string>
+</resources>
