@@ -1,6 +1,5 @@
 
 // File Manager
-// Ito ay pinogram ko gamit ang moto g play - 2024
 // Android version 14
 
 package balikbayan.box.fileman;
