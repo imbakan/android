@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Light</string>
+    <string name="menu_name_10">Server</string>
+    <string name="menu_name_11">Run</string>
+    <string name="menu_name_12">Shutdown</string>
+    <string name="menu_name_20">Client</string>
+    <string name="menu_name_21">Close</string>
+    <string name="menu_name_30">Tools</string>
+    <string name="menu_name_31">Debug</string>
+
+</resources>
