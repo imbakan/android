@@ -5,6 +5,7 @@
 // Android 6 Api 23
 
 // App to turn on/off light remotely via bluetooth
+// A companion app : Switch app
 
 package balikbayan.box.light;
 
