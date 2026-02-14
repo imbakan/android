@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Switch</string>
+    <string name="menu_name_10">Client</string>
+    <string name="menu_name_11">Connect</string>
+    <string name="menu_name_12">Disconnect</string>
+</resources>
