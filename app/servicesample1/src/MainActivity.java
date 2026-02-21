@@ -1,7 +1,7 @@
 
 // Android 6 Api 23
 
-package balikbayan.box.sampleservice;
+package balikbayan.box.servicesample1;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -12,14 +12,11 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -30,50 +27,46 @@ public class MainActivity extends AppCompatActivity {
 
     private Toolbar toolbar;
     private TextView textView;
+    private MyService service;
     private Handler handler;
-    private MySampleService service;
-    private Messenger messenger;
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 
-            MySampleService.MySampleBinder binder = (MySampleService.MySampleBinder) iBinder;
+            MyService.MyBinder binder = (MyService.MyBinder) iBinder;
             service = binder.getService();
-
-            messenger = new Messenger(service.getMessengerBinder());
-            sendMessage(messenger, MySampleService.BOUND, handler);
+            service.setHandler(handler);
 
             Log.d("KLGYN", "service connected");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            Log.d("KLGYN", "service disconnected");
+
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-
-        textView = findViewById(R.id.textView);
 
         toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
 
+        textView = findViewById(R.id.textView);
+
         handler = new Handler(Looper.getMainLooper()) {
             @Override
-            public void handleMessage(Message msg) {
-
-                switch (msg.what){
-                    case MySampleRunnable.COUNT: onCount(msg); break;
+            public void handleMessage(@NonNull Message msg) {
+                switch (msg.what) {
+                    case MyService.COUNT: onCounting(msg); break;
                     default:
                         super.handleMessage(msg);
                 }
+                super.handleMessage(msg);
             }
         };
 
@@ -82,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Intent intent = new Intent(this, MySampleService.class);
+        Intent intent = new Intent(this, MyService.class);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -101,7 +94,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
-        boolean running = service.isCounterRunning();
+        boolean running = false;
+
+        if (service != null)
+            running = service.isRunning();
 
         menu.findItem(R.id.mnuStart).setEnabled(!running);
         menu.findItem(R.id.mnuStop).setEnabled(running);
@@ -111,7 +107,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-
         int id = item.getItemId();
 
         if (id == R.id.mnuStart)
@@ -125,34 +120,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onServiceStart() {
-        Intent intent = new Intent(this, MySampleService.class);
+        Intent intent = new Intent(this, MyService.class);
         startService(intent);
     }
 
-    // pwedeng gamitin ito para iistop ang service
-    // Intent intent = new Intent(this, MySampleService.class);
-    // stopService(intent);
-    //  o ang stopCounter para iistop sa loob ng service
     private void onServiceStop() {
-        service.stopCounter();
+        service.stop();
     }
 
-    private void onCount(Message msg) {
-        long count = (long) msg.obj;
+    private void onCounting(Message msg) {
+        long count = (long)msg.obj;
         textView.setText(String.format(Locale.US,"%d", count));
-        Log.d("KLGYN", String.format("%20d", count));
-
-    }
-
-    private void sendMessage(Messenger messenger, int what, Object obj) {
-        Message msg;
-
-        try {
-            msg = Message.obtain(null, what, obj);
-            messenger.send(msg);
-        } catch (RemoteException e) {
-            Log.d("KLGYN", e.toString());
-        }
     }
 
 }
