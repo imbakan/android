@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="@string/menu_name_10">
+        <menu>
+            <item
+                android:id="@+id/mnuStart"
+                android:title="@string/menu_name_11" />
+            <item
+                android:id="@+id/mnuStop"
+                android:title="@string/menu_name_12" />
+        </menu>
+    </item>
+
+</menu>
