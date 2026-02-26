@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">recycleviewsample1</string>
+    <string name="menu_name_20">Edit</string>
+    <string name="menu_name_21">Add …</string>
+    <string name="menu_name_22">Edit …</string>
+    <string name="menu_name_23">Delete</string>
+    <string name="menu_name_24">Clear</string>
+    <string name="menu_name_30">View</string>
+    <string name="menu_name_31">Content</string>
+    <string name="menu_name_40">Tools</string>
+    <string name="menu_name_41">Fill</string>
+    <string name="menu_name_42">Sort</string>
+    <string name="text_name_1">Add Item</string>
+    <string name="text_name_2">Edit Item</string>
+    <string name="text_name_3">Confirm Delete</string>
+</resources>
