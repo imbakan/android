@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="@string/menu_name_20">
+        <menu>
+            <item
+                android:id="@+id/mnuAdd"
+                android:title="@string/menu_name_21" />
+            <item
+                android:id="@+id/mnuEdit"
+                android:title="@string/menu_name_22" />
+            <item
+                android:id="@+id/mnuDelete"
+                android:title="@string/menu_name_23" />
+            <item
+                android:id="@+id/mnuClear"
+                android:title="@string/menu_name_24" />
+        </menu>
+    </item>
+
+    <item android:title="@string/menu_name_30">
+        <menu>
+            <item
+                android:id="@+id/mnuContent"
+                android:title="@string/menu_name_31" />
+        </menu>
+    </item>
+
+    <item android:title="@string/menu_name_40">
+        <menu>
+            <item
+                android:id="@+id/mnuFill"
+                android:title="@string/menu_name_41" />
+            <item
+                android:id="@+id/mnuSort"
+                android:title="@string/menu_name_42" />
+        </menu>
+    </item>
+
+</menu>
