@@ -28,7 +28,7 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
     private View view1;
     private RecyclerView recyclerView;
     private int index, color;
-    private int mode;
+    private int mode, oldIndex;
 
     public ListViewAdapter(Context context, EventListener listener) {
         this.context = context;
@@ -181,20 +181,6 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
     }
 
     public String set(String str, int i) {
-        TextView textView1;
-
-        Log.d("KLGYN", "pass 1");
-
-        index = -1;
-        view1.setBackgroundColor(Color.TRANSPARENT);
-        textView1 = view1.findViewById(R.id.textView1);
-        textView1.setTextColor(color);
-        view1 = null;
-
-        Log.d("KLGYN", "pass 2");
-
-        mode = EDIT;
-
         return array.set(i, str);
     }
 
@@ -203,14 +189,6 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
     }
 
     public void remove(int i) {
-        TextView textView1;
-
-        index = -1;
-        view1.setBackgroundColor(Color.TRANSPARENT);
-        textView1 = view1.findViewById(R.id.textView1);
-        textView1.setTextColor(color);
-        view1 = null;
-
         array.remove(i);
     }
 
@@ -242,21 +220,39 @@ public class ListViewAdapter extends RecyclerView.Adapter<ListViewHolder> {
         this.mode = mode;
     }
 
-    public void highlighItem(String str) {
+    public void highlighItem() {
         LinearLayoutManager manager;
+        View view;
         TextView textView;
-        int i;
-
-        i = array.indexOf(str);
-        index = i;
 
         manager = (LinearLayoutManager) recyclerView.getLayoutManager();
 
-        view1 = manager.findViewByPosition(index);
-        view1.setBackgroundColor(Color.LTGRAY);
+        view = manager.findViewByPosition(oldIndex);
+        view.setBackgroundColor(Color.LTGRAY);
 
-        textView = view1.findViewById(R.id.textView1);
+        textView = view.findViewById(R.id.textView1);
         textView.setTextColor(Color.DKGRAY);
+
+        index = oldIndex;
+        view1 = view;
+    }
+
+    public void unhighlighItem() {
+        LinearLayoutManager manager;
+        View view;
+        TextView textView;
+
+        manager = (LinearLayoutManager) recyclerView.getLayoutManager();
+
+        view = manager.findViewByPosition(index);
+        view.setBackgroundColor(Color.TRANSPARENT);
+
+        textView = view.findViewById(R.id.textView1);
+        textView.setTextColor(color);
+
+        oldIndex = index;
+        index = -1;
+        view1 = null;
     }
 
     public interface EventListener {
