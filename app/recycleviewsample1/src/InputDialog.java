@@ -87,15 +87,12 @@ public class InputDialog extends DialogFragment {
             public void onClick(DialogInterface dialogInterface, int i) {
                 String str = editText.getText().toString();
                 listener.onClick(str);
-                Log.d("KLGYN", "pass 4");
             }
         });
 
         builder.setNegativeButton("cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                Log.d("KLGYN", "pass 3");
-
             }
         });
 
