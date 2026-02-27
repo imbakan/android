@@ -28,7 +28,6 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.E
     private Toolbar toolbar;
     private RecyclerView recyclerView1;
     private boolean access_granted, item_selected;
-    private String string;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +60,8 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.E
                 ListViewAdapter adapter = (ListViewAdapter) recyclerView1.getAdapter();
 
                 if (adapter.getMode() == ListViewAdapter.EDIT) {
-                    adapter.highlighItem(string);
                     adapter.setMode(ListViewAdapter.NONE);
+                    adapter.highlighItem();
                 }
             }
 
@@ -160,13 +159,14 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.E
                 String str2;
                 int k;
 
-                string = str;
-
                 adapter2 = (ListViewAdapter) recyclerView1.getAdapter();
                 str2 = adapter2.getItem();
                 k = adapter2.getPosition(str2);
-                adapter2.set(string , k);
 
+                adapter2.setMode(ListViewAdapter.EDIT);
+                adapter2.unhighlighItem();
+
+                adapter2.set(str , k);
                 adapter2.notifyItemChanged(k);
             }
         }, R.string.text_name_2, str1);
@@ -195,6 +195,7 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.E
             @Override
             public void onClick() {
                 int k = adapter.getPosition(str);
+                adapter.unhighlighItem();
                 adapter.remove(k);
                 adapter.notifyItemRemoved(k);
 
@@ -219,10 +220,12 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.E
         List<String> list = Arrays.asList(names);
 
         ListViewAdapter adapter = (ListViewAdapter) recyclerView1.getAdapter();
+
+        int i = adapter.getItemCount();
         adapter.addAll(list);
 
-        int n = adapter.getItemCount();
-        adapter.notifyItemRangeInserted(0, n);
+        int n = list.size();
+        adapter.notifyItemRangeInserted(i, n);
     }
 
     private void onToolsSort() {
