@@ -3,4 +3,11 @@
     <string name="menu_name_10">Client</string>
     <string name="menu_name_11">Connect</string>
     <string name="menu_name_12">Disconnect</string>
+    <string name="menu_name_20">Tools</string>
+    <string name="menu_name_21">Brightness …</string>
+    <string name="menu_name_22">Light Color …</string>
+    <string name="switch_name_1">ON</string>
+    <string name="switch_name_2">OFF</string>
+    <string name="text_name_1">Brightness</string>
+    <string name="text_name_2">Light Color</string>
 </resources>
