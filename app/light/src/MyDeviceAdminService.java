@@ -1,32 +1,72 @@
 package balikbayan.box.light;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.Message;
-import android.os.Messenger;
+import android.provider.Settings;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class MyDeviceAdminService extends Service {
 
-    public static final int BOUND = 9001;
-
-    public static final String STATE = "balikbayan.box.light.current.state";
-
     private IBinder binder;
     private Handler handler;
-    private Messenger messenger;
-    private Server server;
+    protected Server server;
+
+    // ito ay event para malaman kung ang screen ay on o off
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (Intent.ACTION_SCREEN_ON.equals(action)) {
+
+                if (server.client != null)
+                    server.client.send(Client.LIGHT_ON);
+
+            } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
+
+                if (server.client != null)
+                    server.client.send(Client.LIGHT_OFF);
+            }
+        }
+    };
+
+    // ito ay event para malaman kung inadjust ang brightness (10 - 255)
+    private ContentObserver contentObserver = new ContentObserver(new Handler()) {
+        @Override
+        public void onChange(boolean selfChange, @Nullable Uri uri) {
+            super.onChange(selfChange, uri);
+            int brightness = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 0);
+
+            //Log.d("KLGYN", String.format(" MyDeviceAdminService : %10d", brightness));
+
+            if (server.client != null) {
+                server.client.send(Client.LIGHT_BRIGHTNESS);
+                server.client.send(brightness);
+            }
+        }
+    };
 
     @Override
     public void onCreate() {
         super.onCreate();
+
+        // Register the receiver
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(broadcastReceiver, filter);
+
+        // Register the observer
+        getContentResolver().registerContentObserver(Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS), false, contentObserver);
 
         binder = new MyDeviceAdminBinder();
         server = new Server(this);
@@ -37,6 +77,13 @@ public class MyDeviceAdminService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        // Unregister the observer
+        getContentResolver().unregisterContentObserver(contentObserver);
+
+        // Unregister the receiver
+        unregisterReceiver(broadcastReceiver);
+
         Log.d("KLGYN", "service destroy");
     }
 
@@ -44,9 +91,6 @@ public class MyDeviceAdminService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("KLGYN", "service start");
 
-        int state = intent.getIntExtra(STATE, 0);
-
-        server.init(this, handler, state);
         new Thread(server).start();
 
         return START_NOT_STICKY;
@@ -65,73 +109,18 @@ public class MyDeviceAdminService extends Service {
         return super.onUnbind(intent);
     }
 
-    private void onBound(Message msg) {
-        handler = (Handler) msg.obj;
-        Log.d("KLGYN", "service bound");
+    public void setHandler(Handler handler) {
+        this.handler = handler;
     }
 
-    public void shutdownServer() {
-        server.shutdown();
+    public Handler getHandler() {
+        return handler;
     }
 
-    public void shutdownClient() {
-        server.shutdownClient();
-    }
-
-    public boolean isServerRunning() {
-        return server.isRunning();
-    }
-
-    public boolean isClientRunning() {
-        return server.isClientRunning();
-    }
-
-    public void flipSwitchON() {
-        server.send(Client.CURRENT_STATE);
-        server.send(Client.LIGHT_ON);
-    }
-
-    public void flipSwitchOFF() {
-        server.send(Client.CURRENT_STATE);
-        server.send(Client.LIGHT_OFF);
-    }
-
-    public IBinder getMessengerBinder() {
-        messenger = new Messenger(new MyDeviceAdminHandler(getMainLooper()));
-        return messenger.getBinder();
-    }
-
-    public void saveCurrentState(int state) {
-        server.saveCurrentState(state);
-    }
-
-    private void sendMessage(Handler handler, int what, Object obj) {
-        Message msg;
-
-        msg = handler.obtainMessage(what, obj);
-        msg.sendToTarget();
-    }
-
+    // ito ang magrereturn ng service object sa MainActivity
     public class MyDeviceAdminBinder extends Binder {
         public MyDeviceAdminService getService() {
             return MyDeviceAdminService.this;
-        }
-    }
-
-    // ang message na isesend ng MainActivity ay dito marereceive
-    private class MyDeviceAdminHandler extends Handler {
-
-        public MyDeviceAdminHandler(@NonNull Looper looper) {
-            super(looper);
-        }
-
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            switch (msg.what) {
-                case BOUND: onBound(msg); break;
-                default:
-                    super.handleMessage(msg);
-            }
         }
     }
 }
