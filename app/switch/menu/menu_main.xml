@@ -11,5 +11,15 @@
                 android:title="@string/menu_name_12" />
         </menu>
     </item>
-    
+    <item android:title="@string/menu_name_20">
+        <menu>
+            <item
+                android:id="@+id/mnuBrightness"
+                android:title="@string/menu_name_21" />
+            <item
+                android:id="@+id/mnuLight"
+                android:title="@string/menu_name_22" />
+        </menu>
+    </item>
+
 </menu>
