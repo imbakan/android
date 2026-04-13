@@ -15,13 +15,13 @@ import java.util.UUID;
 
 public class Client implements Runnable {
 
-    private final UUID MY_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private final UUID MY_UUID = UUID.fromString("b1899020-c25d-489b-a700-42304d6adbbc");
 
     private final int BUFFER_SIZE = 1024;
 
-    public static final int CONNECTING      = 2002;
-    public static final int RUNNING         = 2003;
-    public static final int SHUTTING_DOWN   = 2004;
+    public static final int CONNECTING      = 2001;
+    public static final int RUNNING         = 2002;
+    public static final int SHUTTING_DOWN   = 2003;
 
     private final int NEED_DATA     = 3101;
     private final int SET_ORDER     = 3102;
@@ -31,9 +31,9 @@ public class Client implements Runnable {
 
     public static final int LIGHT_ON        = 5001;
     public static final int LIGHT_OFF       = 5002;
-    public static final int CURRENT_STATE   = 5003;
 
     public static final int LIGHT_COLOR = 6001;
+    public static final int LIGHT_BRIGHTNESS = 6002;
 
     private BluetoothSocket socket;
     private BluetoothDevice device;
@@ -111,13 +111,6 @@ public class Client implements Runnable {
         need_data[0] = false;
 
         switch (task) {
-            case CURRENT_STATE:
-                order.add(GET_INTEGER);
-                order.add(CURRENT_STATE);
-                order.add(GET_INTEGER);
-                order.add(SET_ORDER);
-                break;
-
             case LIGHT_ON:
                 order.add(LIGHT_ON);
                 order.add(GET_INTEGER);
@@ -126,6 +119,13 @@ public class Client implements Runnable {
 
             case LIGHT_OFF:
                 order.add(LIGHT_OFF);
+                order.add(GET_INTEGER);
+                order.add(SET_ORDER);
+                break;
+
+            case LIGHT_BRIGHTNESS:
+                order.add(GET_INTEGER);
+                order.add(LIGHT_BRIGHTNESS);
                 order.add(GET_INTEGER);
                 order.add(SET_ORDER);
                 break;
@@ -158,8 +158,18 @@ public class Client implements Runnable {
         next[0] = order.remove(0);
     }
 
-    private void onCurrentState(ArrayList<Integer> order, int[] next, int value) {
-        sendMessage(handler, CURRENT_STATE, value);
+    private void onLightBrightness(ArrayList<Integer> order, int[] next, int value) {
+        sendMessage(handler, LIGHT_BRIGHTNESS, value);
+        next[0] = order.remove(0);
+    }
+
+    private void onLightOn(ArrayList<Integer> order, int[] next) {
+        sendMessage(handler, LIGHT_ON, null);
+        next[0] = order.remove(0);
+    }
+
+    private void onLightOff(ArrayList<Integer> order, int[] next) {
+        sendMessage(handler, LIGHT_OFF, null);
         next[0] = order.remove(0);
     }
 
@@ -170,7 +180,6 @@ public class Client implements Runnable {
             case SET_ORDER: str = "SET_ORDER"; break;
             case NEED_DATA: str = "NEED_DATA"; break;
             case GET_INTEGER: str = "GET_INTEGER"; break;
-            case CURRENT_STATE: str = "CURRENT_STATE"; break;
             case LIGHT_ON: str = "LIGHT_ON"; break;
             case LIGHT_OFF: str = "LIGHT_OFF"; break;
             default:  str = "EWAN";
@@ -186,7 +195,8 @@ public class Client implements Runnable {
         int[] buffer_size = new int[1];
         int[] index = new int[2];
         int[] next = new int[1];
-        int[] value = new int[1];
+        int[] valuei = new int[1];
+        long[] valuel = new long[1];
         byte[] buffer = new byte[BUFFER_SIZE];
         boolean[] need_data = new boolean[1];
         int count;
@@ -230,7 +240,7 @@ public class Client implements Runnable {
 
                     count = inputstream.read(buffer, index[1], buffer_size[0]);
 
-                    Log.d("KLGYN", String.format("%10d bytes", count));
+                    //Log.d("KLGYN", String.format("%10d bytes", count));
 
                     if (count <= 0) break;
 
@@ -239,13 +249,15 @@ public class Client implements Runnable {
                 }
 
                 //Log.d("KLGYN", String.format("%10d", next[0]));
-                outputTask(next[0]);
+                //outputTask(next[0]);
 
                 switch (next[0]) {
-                    case SET_ORDER:		onSetOrder(need_data, order, next, value[0]);					break;
-                    case NEED_DATA:		onNeedData(buffer, index, buffer_size, need_data, order, next); break;
-                    case GET_INTEGER:	onGetInteger(buffer, index, order, next, value);				break;
-                    case CURRENT_STATE: onCurrentState(order, next, value[0]);							break;
+                    case SET_ORDER:		    onSetOrder(need_data, order, next, valuei[0]);					break;
+                    case NEED_DATA:		    onNeedData(buffer, index, buffer_size, need_data, order, next); break;
+                    case GET_INTEGER:	    onGetInteger(buffer, index, order, next, valuei);				break;
+                    case LIGHT_BRIGHTNESS:  onLightBrightness(order, next, valuei[0]);					    break;
+                    case LIGHT_ON:		    onLightOn(order, next);									        break;
+                    case LIGHT_OFF:		    onLightOff(order, next);									    break;
                 }
 
             }
