@@ -15,29 +15,19 @@ import java.util.UUID;
 public class Server implements Runnable {
 
     private final String NAME = "Bluetooth Server";
-    private final UUID MY_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private final UUID MY_UUID = UUID.fromString("b1899020-c25d-489b-a700-42304d6adbbc");
 
-    public static final int RUNNING         = 1002;
+    public static final int RUNNING         = 1001;
     public static final int SHUTTING_DOWN   = 1003;
 
     private BluetoothServerSocket server_socket = null;
-    private Context context;
-    private Handler handler;
-    private Client client;
-    private boolean running;
-    private int state;
     private MyDeviceAdminService service;
+    protected Client client;
+    private boolean running;
 
     public Server(MyDeviceAdminService service) {
-        client = new Client();
+        this.service = service;                   // ito ay gagamitin para iistop ang service
         running = false;
-        this.service = service;
-    }
-
-    public void init(Context context, Handler handler, int state) {
-        this.context = context;
-        this.handler = handler;
-        this.state = state;
     }
 
     public void shutdown() {
@@ -47,13 +37,8 @@ public class Server implements Runnable {
             Log.d("KLGYN", e.toString());
         }
     }
-
-    public void shutdownClient() {
-        client.shutdown();
-    }
-
-    public void send(int value) {
-        client.send(value);
+    public boolean isRunning() {
+        return running;
     }
 
     private void sendMessage(Handler handler, int what, Object obj) {
@@ -63,16 +48,22 @@ public class Server implements Runnable {
         msg.sendToTarget();
     }
 
-    public void saveCurrentState(int state) {
-        this.state = state;
-    }
+    private void doDelay(long millis) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
 
-    public boolean isRunning() {
-        return running;
-    }
+                try {
+                    Thread.sleep(millis);
+                } catch (InterruptedException ignore) {
+                }
 
-    public boolean isClientRunning() {
-        return client.isRunning();
+                Handler handler = service.getHandler();
+
+                if (handler != null)
+                    sendMessage(handler, RUNNING, null);
+            }
+        }).start();
     }
 
     @Override
@@ -80,10 +71,12 @@ public class Server implements Runnable {
         BluetoothManager manager;
         BluetoothAdapter adapter;
         BluetoothSocket socket = null;
+        Context context = (Context) service;
+        Handler handler;
 
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
-        sendMessage(handler, RUNNING, null);
+        doDelay(500);
 
         running = true;
 
@@ -100,9 +93,9 @@ public class Server implements Runnable {
 
                 if (socket != null) {
 
-                    if (client.isRunning()) client.shutdown();
+                    handler = service.getHandler();
 
-                    client.init(socket, handler, state);
+                    client = new Client(context, socket, handler);
                     new Thread(client).start();
 
                 }
@@ -115,8 +108,14 @@ public class Server implements Runnable {
 
         running = false;
 
-        sendMessage(handler, SHUTTING_DOWN, null);
-
         service.stopSelf();
+
+        handler = service.getHandler();
+
+        if (handler != null)
+            sendMessage(handler, SHUTTING_DOWN, null);
+
+        Log.d("KLGYN", "server thread stop");
+
     }
 }
