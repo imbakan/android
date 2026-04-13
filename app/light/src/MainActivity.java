@@ -12,11 +12,9 @@ package balikbayan.box.light;
 import android.app.admin.DevicePolicyManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -25,8 +23,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
-import android.os.PowerManager;
-import android.os.RemoteException;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -39,6 +36,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -53,7 +52,19 @@ public class MainActivity extends AppCompatActivity {
 
     MyDeviceAdminContract contract1 = new MyDeviceAdminContract();
 
-    ActivityResultLauncher<Void> launcher1 = registerForActivityResult(contract1, new ActivityResultCallback<Boolean>() {
+    private ActivityResultLauncher<Void> launcher1 = registerForActivityResult(contract1, new ActivityResultCallback<Boolean>() {
+        @Override
+        public void onActivityResult(Boolean o) {
+            if (o)
+                requestPermissionBrightness();
+            else
+                access_granted = false;
+        }
+    });
+
+    private BrightnessContract contract2 = new BrightnessContract();
+
+    ActivityResultLauncher<Void> launcher2 = registerForActivityResult(contract2, new ActivityResultCallback<Boolean>() {
         @Override
         public void onActivityResult(Boolean o) {
             if (o)
@@ -63,9 +74,9 @@ public class MainActivity extends AppCompatActivity {
         }
     });
 
-    BluetoothContract contract2 = new BluetoothContract();
+    private BluetoothContract contract3 = new BluetoothContract();
 
-    ActivityResultLauncher<Void> launcher2 = registerForActivityResult(contract2, new ActivityResultCallback<Boolean>() {
+    private ActivityResultLauncher<Void> launcher3 = registerForActivityResult(contract3, new ActivityResultCallback<Boolean>() {
         @Override
         public void onActivityResult(Boolean o) {
             if (o)
@@ -75,37 +86,13 @@ public class MainActivity extends AppCompatActivity {
         }
     });
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            if (service == null || intent == null || intent.getAction() == null) return;
-
-            String action = intent.getAction();
-            if (Intent.ACTION_SCREEN_ON.equals(action)) {
-
-                service.saveCurrentState(Client.LIGHT_ON);
-
-                if (service.isClientRunning()) service.flipSwitchON();
-
-            } else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
-
-                service.saveCurrentState(Client.LIGHT_OFF);
-
-                if (service.isClientRunning()) service.flipSwitchOFF();
-            }
-        }
-    };
-
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 
             MyDeviceAdminService.MyDeviceAdminBinder binder = (MyDeviceAdminService.MyDeviceAdminBinder) iBinder;
             service = binder.getService();
-
-            messenger = new Messenger(service.getMessengerBinder());
-            sendMessage(messenger, MyDeviceAdminService.BOUND, handler);
+            service.setHandler(handler);
 
             Log.d("KLGYN", "service connected");
         }
@@ -143,13 +130,11 @@ public class MainActivity extends AppCompatActivity {
             public void handleMessage(Message msg) {
 
                 switch (msg.what){
-                    case Server.RUNNING:        onServerRunning(msg);       break;
-                    case Server.SHUTTING_DOWN:  onServerShuttingDown(msg);  break;
-                    case Client.RUNNING:        onClientRunning(msg);       break;
-                    case Client.SHUTTING_DOWN:  onClientShuttingDown(msg);  break;
-                    case Client.LIGHT_ON:       onLightOn(msg);             break;
-                    case Client.LIGHT_OFF:      onLightOff(msg);            break;
-                    case Client.LIGHT_COLOR:    onLightColor(msg);          break;
+                    case Server.RUNNING:            onServerRunning(msg);       break;
+                    case Server.SHUTTING_DOWN:      onServerShuttingDown(msg);  break;
+                    case Client.RUNNING:            onClientRunning(msg);       break;
+                    case Client.SHUTTING_DOWN:      onClientShuttingDown(msg);  break;
+                    case Client.LIGHT_COLOR:        onLightColor(msg);          break;
                     default:
                         super.handleMessage(msg);
                 }
@@ -171,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, MyDeviceAdminService.class);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
+
     }
 
     @Override
@@ -178,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         unbindService(serviceConnection);
+
     }
 
     @Override
@@ -189,14 +176,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
+        boolean server_running;
+
         if (service == null) return super.onPrepareOptionsMenu(menu);
 
-        boolean server_running = service.isServerRunning();
-        boolean client_running = service.isClientRunning();
+        server_running = service.server.isRunning();
 
-        menu.findItem(R.id.mnuRun).setEnabled(access_granted & !server_running);
-        menu.findItem(R.id.mnuShutdown).setEnabled(access_granted & server_running);
-        menu.findItem(R.id.mnuClose).setEnabled(access_granted & client_running);
+        menu.findItem(R.id.mnuRun).setEnabled(access_granted && !server_running);
+        menu.findItem(R.id.mnuShutdown).setEnabled(access_granted && server_running);
+        menu.findItem(R.id.mnuClose).setEnabled(access_granted);
         menu.findItem(R.id.mnuDebug).setEnabled(access_granted);
 
         return super.onPrepareOptionsMenu(menu);
@@ -223,16 +211,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void onServerRun() {
         Intent intent = new Intent(this, MyDeviceAdminService.class);
-        intent.putExtra(MyDeviceAdminService.STATE, Client.LIGHT_ON);
         startService(intent);
     }
 
     private void onServerShutdown() {
-        service.shutdownServer();
+        service.server.shutdown();
     }
 
     private void onClientClose() {
-        service.shutdownClient();
+        service.server.client.shutdown();
     }
 
     private void onToolsDebug() {
@@ -240,41 +227,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onServerRunning(Message msg) {
-
-        setLightColor(0, 0, 255);
-
-        // Register the receiver
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_SCREEN_ON);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(broadcastReceiver, filter);
-
+        setLightColor(Color.rgb(255, 214, 170));
     }
 
     private void onServerShuttingDown(Message msg) {
-
-        setLightColor(255, 255, 255);
-
-        // Unregister the receiver
-        unregisterReceiver(broadcastReceiver);
+        setLightColor(Color.rgb(128,128,128));
     }
 
     private void onClientRunning(Message msg) {
+
     }
 
     private void onClientShuttingDown(Message msg) {
-    }
 
-    private void onLightOn(Message msg) {
-        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,"MyApp:MyWakelockTag");
-        wakeLock.acquire();
-        wakeLock.release();
-    }
-
-    private void onLightOff(Message msg) {
-        DevicePolicyManager devicePolicyManager = (DevicePolicyManager) getSystemService(DEVICE_POLICY_SERVICE);
-        devicePolicyManager.lockNow();
     }
 
     private void onLightColor(Message msg) {
@@ -282,24 +247,7 @@ public class MainActivity extends AppCompatActivity {
         setLightColor(color);
     }
 
-    private void sendMessage(Messenger messenger, int what, Object obj) {
-        Message msg;
-
-        try {
-            msg = Message.obtain(null, what, obj);
-            messenger.send(msg);
-        } catch (RemoteException e) {
-            Log.d("KLGYN", e.toString());
-        }
-    }
-
-    private void setLightColor(int red, int green, int blue) {
-        int color = Color.rgb(red, green, blue);
-        toolbar.setBackgroundColor(color);
-        layout.setBackgroundColor(color);
-        getWindow().setStatusBarColor(color);
-    }
-
+    // other way is int color = Color.rgb(red, green, blue);
     private void setLightColor(int color) {
         toolbar.setBackgroundColor(color);
         layout.setBackgroundColor(color);
@@ -313,9 +261,16 @@ public class MainActivity extends AppCompatActivity {
         boolean active = devicePolicyManager.isAdminActive(componentName);
 
         if(active)
-            requestPermissionBluetooth();
+            requestPermissionBrightness();
         else
             launcher1.launch(null);
+    }
+
+    private void requestPermissionBrightness() {
+        if (Settings.System.canWrite(this))
+            requestPermissionBluetooth();
+        else
+            launcher2.launch(null);
     }
 
     private void requestPermissionBluetooth() {
@@ -326,11 +281,12 @@ public class MainActivity extends AppCompatActivity {
         if (adaptor != null && adaptor.isEnabled())
             initialize();
         else
-            launcher2.launch(null);
+            launcher3.launch(null);
     }
 
     private void initialize() {
         access_granted = true;
+        onServerRun();
     }
 
 }
