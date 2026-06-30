@@ -1,4 +1,4 @@
-package balikbayan.box.client_bt;
+package balikbayan.box.bt_client;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -34,4 +34,5 @@ public class ViewPagerAdapter extends FragmentStateAdapter {
     public Fragment getItem(int position) {
         return array.get(position);
     }
+
 }
