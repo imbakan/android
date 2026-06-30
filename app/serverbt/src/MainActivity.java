@@ -1,5 +1,10 @@
-package balikbayan.box.server_bt;
 
+// bluetooth - server side
+// Android 13 - API 33
+
+package balikbayan.box.bt_server;
+
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
@@ -10,9 +15,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.EditText;
+import android.view.ViewTreeObserver;
 
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -20,21 +26,17 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.MenuCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.net.Socket;
-
-public class MainActivity extends AppCompatActivity implements ListViewAdapter.OnEventListener {
-
-    private RecyclerView recyclerView1;
-    private EditText editText1;
+public class MainActivity extends AppCompatActivity implements ListViewAdapter.EventListener {
 
     private Toolbar toolbar;
     private Handler handler;
-
+    private RecyclerView recyclerView1;
     private Server server;
-    private boolean access_granted, running, selected;
+    private boolean access_granted, running, item_selected;
 
     // reply sa requestPermissionBTConnect
     ActivityResultLauncher<String> launcher1 = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -57,7 +59,6 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
         }
     });
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,13 +70,19 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
         toolbar.setTitle("OFFLINE");
         setSupportActionBar(toolbar);
 
-        editText1 = findViewById(R.id.editText1);
-        editText1.setKeyListener(null);
+        recyclerView1 = findViewById(R.id.recyclerView1);
 
         ListViewAdapter adapter = new ListViewAdapter(this, this);
-        recyclerView1 = findViewById(R.id.recyclerView1);
+
         recyclerView1.setLayoutManager(new LinearLayoutManager(this));
         recyclerView1.setAdapter(adapter);
+
+        recyclerView1.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+
+            }
+        });
 
         //  +------------------------------------------------------------------------+
         //  |                          handler message                               |
@@ -86,8 +93,8 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
             public void handleMessage(Message msg) {
 
                 switch (msg.what){
-                    case Server.LOG_MESSAGE:
-                    case Client.LOG_MESSAGE:            onLogMessage(msg);          break;
+                    case Server.MESSAGE:
+                    case Client.MESSAGE:                onMessage(msg);             break;
                     case Server.RUNNING:                onServerRunning(msg);       break;
                     case Server.SHUTTING_DOWN:          onServerShuttingDown(msg);  break;
                     case Server.CREATE_CLIENT:          onCreateClient(msg);        break;
@@ -102,16 +109,17 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
         //  +------------------------------------------------------------------------+
         //  |                            permission                                  |
         //  +------------------------------------------------------------------------+
-        // access order:
-        // 1. nearby device
-        // 2. turn bluetooth on/off
+
+        access_granted = running = false;
 
         requestPermissionBTConnect();
+
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        MenuCompat.setGroupDividerEnabled(menu, true);
         return true;
     }
 
@@ -120,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
 
         menu.findItem(R.id.mnuRun).setEnabled(access_granted && !running);
         menu.findItem(R.id.mnuShutdown).setEnabled(access_granted && running);
-        menu.findItem(R.id.mnuClose).setEnabled(access_granted && selected);
+        menu.findItem(R.id.mnuClose).setEnabled(access_granted && item_selected);
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -150,168 +158,17 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
     }
 
     private void onClientClose() {
-        ListViewAdapter adapter;
-        Client client;
-
-        adapter = (ListViewAdapter) recyclerView1.getAdapter();
-        client = adapter.getItem();
+        ListViewAdapter adapter = (ListViewAdapter) recyclerView1.getAdapter();
+        Client client = adapter.getItem();
         client.shutdown();
-    }
-
-    private void sendMessage(int what, Object obj) {
-        Message msg;
-
-        msg = handler.obtainMessage(what, obj);
-        msg.sendToTarget();
-    }
-
-    private void onLogMessage(Message msg) {
-        String str1, str2, str3;
-
-        str1 = editText1.getText().toString();
-        str2 = (String) msg.obj;
-        str3 = str1 + "\n" + str2;
-        editText1.setText(str3);
-    }
-
-    private void onServerRunning(Message msg) {
-        String str = (String) msg.obj;
-        sendMessage(Server.LOG_MESSAGE, str);
-        toolbar.setTitle("ONLINE");
-        running = true;
-    }
-
-    private void onServerShuttingDown(Message msg) {
-        String str = (String) msg.obj;
-        sendMessage(Server.LOG_MESSAGE, str);
-        toolbar.setTitle("OFFLINE");
-        running = false;
-    }
-
-    private void onCreateClient(Message msg) {
-        BluetoothSocket socket = (BluetoothSocket) msg.obj;
-        Client client = new Client(handler, socket);
-        new Thread(client).start();
-    }
-
-    private void onClientRunning(Message msg) {
-        Client client1 = (Client) msg.obj;
-        ListViewAdapter adapter;
-        int k, n;
-
-        // ang server ay nag-aasign ng id sa kumonektang client
-        // isend 'to sa client
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                client1.send(Client.CONNECTED);
-                client1.send(client1.getId());
-            }
-        }).start();
-
-        adapter = (ListViewAdapter) recyclerView1.getAdapter();
-
-        // isend ang mga pangalan ng client na nasa list view sa kumonektang client
-        n = adapter.getItemCount();
-
-        if (n > 0) {
-
-            // isend ang mga pangalan ng client na nasa list view sa kumonektang client
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Client client2;
-                    int i;
-
-                    for (i = 0; i < n; i++) {
-
-                        client2 = adapter.getItem(i);
-
-                        client1.send(Client.ATTRIBUTES);
-                        client1.send(client2.getName());
-                        client1.send(client2.getId());
-                    }
-
-                    client1.send(Client.REPLY_DEVICE);
-                }
-            }).start();
-
-            // isend ang pangalan ng kumonektang client sa mga client na nasa list view
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Client client2;
-                    int i;
-
-                    for (i = 0; i < n; i++) {
-
-                        client2 = adapter.getItem(i);
-
-                        client2.send(Client.ATTRIBUTES);
-                        client2.send(client1.getName());
-                        client2.send(client1.getId());
-                        client2.send(Client.REPLY_DEVICE);
-                    }
-                }
-            }).start();
-        }
-
-        // iadd ang kumonektang client sa list view
-        adapter.add(client1);
-        k = adapter.getItemCount() - 1;
-        adapter.notifyItemInserted(k);
-    }
-
-    private void onClientShuttingDown(Message msg) {
-        Client client1 = (Client) msg.obj;
-        ListViewAdapter adapter;
-        int k;
-
-        // iremove ang client na 'to sa list view
-        adapter = (ListViewAdapter) recyclerView1.getAdapter();
-        k = adapter.getPosition(client1);
-        adapter.remove(k);
-        adapter.notifyItemRemoved(k);
-
-        selected = false;
-
-        // ipaalam sa mga client na nasa list view na wala na ang client na 'to
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-
-                Client client2;
-                int i, n;
-
-                n = adapter.getItemCount();
-
-                for (i = 0; i < n; i++) {
-
-                    client2 = adapter.getItem(i);
-
-                    client2.send(Client.LEAVE);
-                    client2.send(client1.getId());
-                }
-            }
-        }).start();
-    }
-
-    @Override
-    public void onItemSelected() {
-        selected = true;
-    }
-
-    @Override
-    public void onItemUnselected() {
-        selected = false;
     }
 
     private void requestPermissionBTConnect() {
 
-        if (checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+        if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
             requestPermissionBTEnability();
         else
-            launcher1.launch(android.Manifest.permission.BLUETOOTH_CONNECT);
+            launcher1.launch(Manifest.permission.BLUETOOTH_CONNECT);
     }
 
     private void requestPermissionBTEnability() {
@@ -326,8 +183,123 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.O
     }
 
     private void initialize() {
-
         access_granted = true;
         server = new Server(handler, this);
+
+        onServerRun();
+    }
+
+    private void sendMessage(Handler handler, int what, Object obj) {
+        Message msg;
+
+        msg = handler.obtainMessage(what, obj);
+        msg.sendToTarget();
+    }
+
+    private void onMessage(Message msg) {
+    }
+
+    private void onServerRunning(Message msg) {
+        toolbar.setTitle("ONLINE");
+        running = true;
+    }
+
+    private void onServerShuttingDown(Message msg) {
+        toolbar.setTitle("OFFLINE");
+        running = false;
+    }
+
+    private void onCreateClient(Message msg) {
+        ListViewAdapter adapter =  (ListViewAdapter) recyclerView1.getAdapter();
+        BluetoothSocket socket = (BluetoothSocket) msg.obj;
+        Client client = new Client(handler, socket, adapter);
+        new Thread(client).start();
+    }
+
+    private void onClientRunning(Message msg) {
+        Client client, item;
+        ListViewAdapter adapter;
+        int i, n, pos;
+
+        // idagdag ang bagong client sa list view
+        client = (Client)msg.obj;
+        adapter = (ListViewAdapter) recyclerView1.getAdapter();
+        adapter.add(client);
+
+        pos = adapter.getItemCount() - 1;
+        adapter.notifyItemInserted(pos);
+
+        // isend ang mga nasa list view sa kumonektang client
+        n = adapter.getItemCount();
+
+        for (i=0; i < n; i++) {
+
+            item = adapter.getItem(i);
+
+            //Log.d("KLGYN", String.format("%s %d", item.getName(), item.getId()));
+
+            client.send(Client.ATTRIBUTE);
+            client.send(item.getId());
+            client.send(item.getName());
+        }
+
+        client.send(Client.DEVICE);
+
+        // isend ang kumonektang client sa mga nasa list view
+        for (i=0; i<n; i++) {
+
+            item = adapter.getItem(i);
+
+            // hindi kasali ang kumonektang client
+            if (item.getId() == client.getId()) continue;
+
+            //Log.d("KLGYN", String.format("%-30s%20d %-30s%20d", item.getName(), item.getId(), client.getName(), client.getId()));
+
+            item.send(Client.ATTRIBUTE);
+            item.send(client.getId());
+            item.send(client.getName());
+
+            item.send(Client.DEVICE);
+
+        }
+    }
+
+    private void onClientShuttingDown(Message msg) {
+
+        Client client = (Client)msg.obj;
+        ListViewAdapter adapter = (ListViewAdapter) recyclerView1.getAdapter();
+        Client item;
+        int i, k,n;
+
+        // alisin ang client nito sa list view
+        k = adapter.getPosition(client);
+        adapter.unhighlighItem();
+        adapter.remove(k);
+        adapter.notifyItemRemoved(k);
+
+        // isend ang nagleave na client sa mga nasa list view para iremove
+        n = adapter.getItemCount();
+
+        for (i=0; i < n; i++) {
+
+            item = adapter.getItem(i);
+
+            Log.d("KLGYN", String.format("%40s%20d%40s%20d", item.getName(), item.getId(), client.getName(), client.getId()));
+
+            item.send(Client.LEAVE);
+            item.send(client.getId());
+        }
+
+        item_selected = false;
+    }
+
+    @Override
+    public void onItemSelected(Client client) {
+        item_selected = true;
+    }
+
+    @Override
+    public void onItemUnselected() {
+        item_selected = false;
     }
 }
