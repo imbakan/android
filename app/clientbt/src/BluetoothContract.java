@@ -1,4 +1,4 @@
-package balikbayan.box.clientbt;
+package balikbayan.box.bt_client;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
