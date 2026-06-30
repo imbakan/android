@@ -1,4 +1,4 @@
-package balikbayan.box.serverbt06;
+package balikbayan.box.bt_server;
 
 import android.view.View;
 import android.widget.TextView;
@@ -8,7 +8,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class ListViewHolder extends RecyclerView.ViewHolder {
-
     private TextView textView1, textView2;
     private ConstraintLayout layout1;
 
@@ -27,7 +26,7 @@ public class ListViewHolder extends RecyclerView.ViewHolder {
         return textView2;
     }
 
-    public ConstraintLayout getLayout() {
+    public ConstraintLayout getLayout1() {
         return layout1;
     }
 }
