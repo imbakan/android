@@ -1,4 +1,4 @@
-package balikbayan.box.client_bt;
+package balikbayan.box.bt_client;
 
 import android.app.Activity;
 import android.content.Context;
