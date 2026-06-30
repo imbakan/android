@@ -1,4 +1,4 @@
-package balikbayan.box.server_bt;
+package balikbayan.box.bt_server;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -14,9 +15,9 @@ import java.util.UUID;
 public class Server implements Runnable {
 
     private final String NAME = "Bluetooth Server";
-    private final UUID MY_UUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+    private final UUID MY_UUID = UUID.fromString("b1899020-c25d-489b-a700-42304d6adbbc");
 
-    public static final int LOG_MESSAGE     = 1001;
+    public static final int MESSAGE     = 1001;
     public static final int RUNNING         = 1002;
     public static final int SHUTTING_DOWN   = 1003;
     public static final int CREATE_CLIENT   = 1004;
@@ -34,7 +35,7 @@ public class Server implements Runnable {
         try {
             server_socket.close();
         } catch (IOException e) {
-            sendMessage(LOG_MESSAGE, e.toString());
+            sendMessage(MESSAGE, e.toString());
         }
     }
 
@@ -51,10 +52,11 @@ public class Server implements Runnable {
         BluetoothAdapter adapter;
         BluetoothSocket socket = null;
 
-        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+        Log.d("KLGYN", "Server thread has started.");
 
-        //sendMessage(LOG_MESSAGE, "Server thread has started.");
-        sendMessage(RUNNING, "Server thread has started.");
+        sendMessage(RUNNING, null);
+
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
         try {
 
@@ -71,12 +73,14 @@ public class Server implements Runnable {
             }
 
         } catch (IOException | SecurityException e) {
-            sendMessage(LOG_MESSAGE, e.toString());
+            sendMessage(MESSAGE, e.toString());
         }
 
         shutdown();
 
-        //sendMessage(LOG_MESSAGE, "Server thread has exited.");
-        sendMessage(SHUTTING_DOWN, "Server thread has exited.");
+        sendMessage(SHUTTING_DOWN, null);
+
+        Log.d("KLGYN", "Server thread has exited.");
+
     }
 }
