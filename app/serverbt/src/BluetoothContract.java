@@ -1,4 +1,4 @@
-package balikbayan.box.serverbt06;
+package balikbayan.box.bt_server;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -30,10 +30,8 @@ public class BluetoothContract extends ActivityResultContract<Void, Boolean> {
 
     @Override
     public Boolean parseResult(int i, @Nullable Intent intent) {
-
         BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter adapter = manager.getAdapter();
-
         return (adapter != null && adapter.isEnabled());
     }
 }
