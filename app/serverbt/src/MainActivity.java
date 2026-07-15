@@ -284,7 +284,7 @@ public class MainActivity extends AppCompatActivity implements ListViewAdapter.E
 
             item = adapter.getItem(i);
 
-            Log.d("KLGYN", String.format("%40s%20d%40s%20d", item.getName(), item.getId(), client.getName(), client.getId()));
+            //Log.d("KLGYN", String.format("%40s%20d%40s%20d", item.getName(), item.getId(), client.getName(), client.getId()));
 
             item.send(Client.LEAVE);
             item.send(client.getId());
