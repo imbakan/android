@@ -1,5 +1,5 @@
 
-// receive ng server
+// nareceive ng server
 //     +---------------+
 //     |   Client Id   |
 //     +---------------+
@@ -8,7 +8,7 @@
 //     |      Data     |
 //     +---------------+
 
-// send ng server
+// sinend ng server
 //     +---------------+
 //     |   Client Id   |
 //     +---------------+
@@ -47,6 +47,7 @@ public class Client implements Runnable {
     private final int GET_INTEGER    = 3003;
     private final int GET_LONG       = 3004;
     private final int GET_STRING     = 3005;
+    private final int GET_ATTRIBUTE  = 3006;
 
     private final int JOIN = 5003;
     private final int CLIENT_ID = 5004;
@@ -56,8 +57,7 @@ public class Client implements Runnable {
     public static final int DEVICE = 6002;
 
     private final int FORWARD = 7001;
-    private final int GET_DATA_SIZE = 7002;
-    private final int FORWARD_SOURCE = 7003;
+    private final int SEND_ATTRIBUTE = 7003;
 
     private BluetoothSocket socket;
     private OutputStream outputstream;
@@ -160,8 +160,8 @@ public class Client implements Runnable {
             case FORWARD:
                 order.add(GET_LONG);
                 order.add(GET_LONG);
-                order.add(GET_DATA_SIZE);
-                order.add(FORWARD_SOURCE);
+                order.add(GET_ATTRIBUTE);
+                order.add(SEND_ATTRIBUTE);
                 order.add(FORWARD);
                 order.add(GET_INTEGER);
                 order.add(SET_ORDER);
@@ -237,7 +237,6 @@ public class Client implements Runnable {
 
         bb = ByteBuffer.wrap(buffer, index[0], req_size);
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        //value[0] = bb.getLong();
         array.add(bb.getLong());
 
         index[0] += req_size;
@@ -262,14 +261,36 @@ public class Client implements Runnable {
         next[0] = order.remove(0);
     }
 
+    private void onGetAttribute(ArrayList<Integer> order, int[] next, ArrayList<Long> array, long[] size, Client[] client) {
+        Client item;
+        long id;
+        int i, n;
+
+        id = array.remove(0);
+        size[0] = array.remove(0);
+
+        // kunin ang destination client base sa id number
+        n = adapter.getItemCount();
+
+        for (i=0; i<n; i++) {
+
+            item = adapter.getItem(i);
+
+            if (id == item.getId()) {
+                client[0] = item;
+                break;
+            }
+        }
+
+        next[0] = order.remove(0);
+    }
+
     private void onRunning(ArrayList<Integer> order, int[] next, String str) {
         Calendar c;
         SimpleDateFormat sdf;
         long now;
 
         name = str;
-
-        //Log.d("KLGYN", String.format("client on running %s", name));
 
         c = Calendar.getInstance();
         now = c.getTimeInMillis();
@@ -281,37 +302,6 @@ public class Client implements Runnable {
         next[0] = order.remove(0);
     }
 
-    private void onGetDataSize(ArrayList<Integer> order, int[] next, ArrayList<Long> array, long[] size, Client[] client) {
-        Client item;
-        long id;
-        int i, n;
-
-        id = array.remove(0);
-        size[0] = array.remove(0);
-
-        //Log.d("KLGYN", String.format("client forward %d %d", id ,size[o));
-
-        // kunin ang destination client base sa id number
-        n = adapter.getItemCount();
-
-        Log.d("KLGYN", String.format("list view count %d", n));
-
-        for (i=0; i<n; i++) {
-
-            item = adapter.getItem(i);
-
-            Log.d("KLGYN", String.format("list view %s %d", item.getName(), item.getId()));
-
-            if (id == item.getId()) {
-                client[0] = item;
-                break;
-            }
-        }
-
-        next[0] = order.remove(0);
-    }
-
-    // iforward ang data na galing sa client
     private void onForward(byte[] buffer, int[] index, int[] buffer_size, boolean[] need_data, ArrayList<Integer> order, int[] next, Client[] client, long[] data_size) {
         long avail_size;
 
@@ -334,9 +324,7 @@ public class Client implements Runnable {
         }
     }
 
-    private void onForwardSource(ArrayList<Integer> order, int[] next, Client[] client) {
-
-        Log.d("KLGYN", String.format("on forward source client id %d", id));
+    private void onSendAttribute(ArrayList<Integer> order, int[] next, Client[] client) {
 
         client[0].send(CLIENT_ID);
         client[0].send(id);
@@ -358,9 +346,9 @@ public class Client implements Runnable {
             case GET_INTEGER:					Log.d("KLGYN", "GET_INTEGER"); break;
             case GET_LONG:					    Log.d("KLGYN", "GET_LONG"); break;
             case GET_STRING:					Log.d("KLGYN", "GET_STRING"); break;
-            case GET_DATA_SIZE:					Log.d("KLGYN", "GET_DATA_SIZE"); break;
+            case GET_ATTRIBUTE:					Log.d("KLGYN", "GET_ATTRIBUTE"); break;
             case FORWARD:		                Log.d("KLGYN", "FORWARD"); break;
-            case FORWARD_SOURCE:		        Log.d("KLGYN", "FORWARD_SOURCE"); break;
+            case SEND_ATTRIBUTE:		        Log.d("KLGYN", "SEND_ATTRIBUTE"); break;
             case RUNNING:				        Log.d("KLGYN", "RUNNING"); break;
             default:                            Log.d("KLGYN", "**************");
         }
@@ -383,11 +371,12 @@ public class Client implements Runnable {
         boolean[] need_data = new boolean[1];
         int count;
 
-        Log.d("KLGYN", "client thread has started.");
-
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
         id = SystemClock.elapsedRealtime();
+
+        long tid = android.os.Process.myTid();
+        Log.d("KLGYN", String.format("client thread %d has started.", tid));
 
         try {
 
@@ -433,15 +422,14 @@ public class Client implements Runnable {
                     case GET_INTEGER:					onGetInteger(buffer, index, order, next, ivalue);				                break;
                     case GET_LONG:					    onGetLong(buffer, index, order, next, array_l);				                    break;
                     case GET_STRING:					onGetString(buffer, index, order, next, ivalue[0], str);		                break;
-                    case GET_DATA_SIZE:					onGetDataSize(order, next, array_l, size, client);		                        break;
+                    case GET_ATTRIBUTE:					onGetAttribute(order, next, array_l, size, client);		                        break;
                     case FORWARD:		                onForward(buffer, index, buffer_size, need_data, order, next, client, size);    break;
-                    case FORWARD_SOURCE:		        onForwardSource(order, next, client);                                           break;
+                    case SEND_ATTRIBUTE:		        onSendAttribute(order, next, client);                                           break;
                     case RUNNING:				        onRunning(order, next, str[0]);		                                            break;
                 }
             }
 
         } catch (IOException | SecurityException e) {
-            Log.d("KLGYN", e.toString());
             sendMessage(MESSAGE, e.toString());
         }
 
@@ -449,7 +437,7 @@ public class Client implements Runnable {
 
         sendMessage(SHUTTING_DOWN, this);
 
-        Log.d("KLGYN", "Client thread has exited.");
+        Log.d("KLGYN", String.format("Client thread %d has exited.", tid));
 
     }
 }
